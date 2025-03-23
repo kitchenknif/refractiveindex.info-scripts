@@ -11,7 +11,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-def generate_epsilon():
+def generate_epsilon(num_points=10000, min_ev=0.01, max_ev=30.):
     auxfuncs = __import__("Chernova 2017 - Aux funcs")
 
 
@@ -27,12 +27,9 @@ def generate_epsilon():
     eps_inf = 1
 
     # Simulate range
-    num_points = 1000
-    eV = np.linspace(0.1, 15.0, num_points, True)
-    dEv = eV[1]-eV[0]
+    eV = np.linspace(min_ev, max_ev, num_points, True)
 
-    epsilon_1_inf = eps_inf * np.ones(eV.shape)
-    epsilon_1_UV = [UV_Amplitude/(UV_E**2 - e**2) for e in eV]
+    epsilon_1_UV = [UV_Amplitude / (UV_E ** 2 - e ** 2) for e in eV]
 
     eps_1 = np.add(eps_inf, epsilon_1_UV)
     eps_2 = np.zeros(eV.shape)

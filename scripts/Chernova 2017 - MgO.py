@@ -17,8 +17,8 @@ import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use("TkAgg")
 
-def generate_epsilon():
-    auxfuncs = __import__("Chernova 2017 - Aux Funcs")
+def generate_epsilon(num_points=10000, min_ev=0.01, max_ev=30.):
+    auxfuncs = __import__("Chernova 2017 - Aux funcs")
 
     UV_E = 13.7
     UV_Amplitude = 47
@@ -37,8 +37,8 @@ def generate_epsilon():
     eps_inf = 1
 
     # Simulate range
-    num_points = 2000
-    eV = np.linspace(0.1, 100.0, num_points, True)  # long TL tail requires model to go so high
+    eV = np.linspace(min_ev, max_ev, num_points, True)
+
     eps1 = np.zeros(eV.shape)
     eps2 = np.zeros(eV.shape)
 
