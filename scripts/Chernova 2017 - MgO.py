@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use("TkAgg")
 
-def generate_epsilon(num_points=10000, min_ev=0.01, max_ev=30.):
+def generate_epsilon(num_points=10000, min_ev=0.01, max_ev=30., kk="ML"):
     auxfuncs = __import__("Chernova 2017 - Aux funcs")
 
     UV_E = 13.7
@@ -42,15 +42,12 @@ def generate_epsilon(num_points=10000, min_ev=0.01, max_ev=30.):
     eps1 = np.zeros(eV.shape)
     eps2 = np.zeros(eV.shape)
 
-
-    plt.figure(0)
     # Tauc-Lorentz
     for i in range(len(E_TL)):
-        eps_1_TL, eps_2_TL = auxfuncs.taucLorentz_KK(eV, E_TL[i], A_TL[i], C_TL[i], Eg_TL[i])
+        eps_1_TL, eps_2_TL = auxfuncs.taucLorentz_KK(eV, E_TL[i], A_TL[i], C_TL[i], Eg_TL[i], kk)
         eps1 += eps_1_TL
         eps2 += eps_2_TL
 
-        plt.plot(eV, eps_2_TL)
     #
     # Lorentz oscillators
     #
@@ -58,8 +55,6 @@ def generate_epsilon(num_points=10000, min_ev=0.01, max_ev=30.):
         eps_1_lor, eps_2_lor = auxfuncs.lorentz(eV, Lorentz_Amplitude[i], Lorentz_FWHM[i], Lorentz_Eg[i])
         eps1 += eps_1_lor
         eps2 += eps_2_lor
-
-        plt.plot(eV, eps_2_lor)
 
     #
     # Poles
@@ -69,8 +64,6 @@ def generate_epsilon(num_points=10000, min_ev=0.01, max_ev=30.):
     eps1 += eps_inf
 
     epsilon = eps1 + 1j * eps2
-
-    plt.show()
 
     return eV, epsilon
 
