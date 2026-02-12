@@ -22,11 +22,10 @@ def generate_ir_oscillators(num_points=6000, wavenum_min=300., wavenum_max=5900.
     # Model parameters
     #
 
-    # Gaussian cm-1 -- only IR
-    Gaussian_Amplitude = [0.72443, 4.0012, 1.0615, 8.8976]
-    Gaussian_E0 = [387.09, 330.31, 324.31, 308.96]
-    Gaussian_Br = [25.814, 68.616, 33.397, 23.55]
-
+    # Lorentz cm-1 -- only IR
+    Lorentz_Amplitude = [1702.3, 0.26993]
+    Lorentz_Eg = [396.73, 643.56]
+    Lorentz_Br = [1.5498, 106.86]
 
     # Simulate range
     waveNumber = np.linspace(wavenum_min, wavenum_max, num_points, True)  # cm-1
@@ -38,10 +37,10 @@ def generate_ir_oscillators(num_points=6000, wavenum_min=300., wavenum_max=5900.
     eps_1 = np.zeros(waveNumber.shape)
 
     #
-    # Gaussian oscillators -- only for IR
+    # Lorentz oscillators
     #
-    for i in range(len(Gaussian_E0)):
-        eps_1_osc, eps_2_osc = auxfuncs.gaussian(waveNumber, Gaussian_E0[i], Gaussian_Amplitude[i], Gaussian_Br[i])
+    for i in range(len(Lorentz_Amplitude)):
+        eps_1_osc, eps_2_osc = auxfuncs.lorentz(waveNumber, Lorentz_Amplitude[i], Lorentz_Br[i], Lorentz_Eg[i])
         eps_2 += eps_2_osc
         eps_1 += eps_1_osc
 
@@ -55,16 +54,15 @@ def generate_uv_oscillators(num_points=10000, min_eV=0.01, max_eV=30.0):
     #
 
     # Gaussian eV -- only UV
-    Gaussian_Amplitude = [0.50989, 4.92*10**-5, 6.15*10**-6, 0.69671]
-    Gaussian_E0 = [6.045, 2.1442, 4.4274, 4.5874]
-    Gaussian_Br = [1.7501, 0.21914, 4.2673, 1.188]
-
+    Gaussian_Amplitude = [0.55291, 4.2344, 6.71*10**-4, 6.18*10**-5, 3.56*10**-5]
+    Gaussian_E0 = [8.6734, 7.6359, 7.2652, 5.0889, 4.3675]
+    Gaussian_Br = [1.0501, 0.18511, 2.1479, 0.80321, 0.60936]
 
     #Tauc Lorentz eV -- only UV
-    TL_A = [191.03, 178.58]
-    TL_E0 = [8.4056, 3.5588]
-    TL_C = [3.3764, 3.674]
-    TL_Eg = [7.3762, 2.4054]
+    TL_A = [297.39, 2274.6]
+    TL_C = [4.4633, 0.17911]
+    TL_E0 = [9.623, 7.7091]
+    TL_Eg = [7.9862, 7.6602]
 
     # Simulate range
     eV = np.linspace(min_eV, max_eV, num_points, True)
@@ -91,17 +89,26 @@ def generate_uv_oscillators(num_points=10000, min_eV=0.01, max_eV=30.0):
         eps_2 += eps_2_osc
         eps_1 += eps_1_osc
 
+    epsilon = np.asarray(eps_1 + 1j * eps_2, dtype=np.complex128)
+
     return eV, eps_1, eps_2
 
 
-def generate_epsilon(fit_points=1000, min_um=1.7, max_um=33, gen_points=10000, min_ev=0.01, max_ev=30.0, min_wavenum=300., max_wavenum=5900.):
-    waveNumber, osc_ir_1, osc_ir_2 = generate_ir_oscillators(num_points=gen_points, wavenum_min=min_wavenum, wavenum_max=max_wavenum)
+def generate_epsilon(fit_points=1000, lin_wavelength=True, min_um=1.7, max_um=33, gen_points=10000, min_ev=0.01,
+                     max_ev=30.0, min_wavenum=300., max_wavenum=5900., kk="ML"):
+    waveNumber, osc_ir_1, osc_ir_2 = generate_ir_oscillators(num_points=gen_points, wavenum_min=min_wavenum,
+                                                             wavenum_max=max_wavenum)
     eV, osc_uv_1, osc_uv_2 = generate_uv_oscillators(num_points=gen_points, min_eV=min_ev, max_eV=max_ev)
 
     # Model range
-    wl_um = np.linspace(max_um, min_um, fit_points, True)
-    fit_wavenumber = np.divide(1e4, wl_um)
-    fit_ev = np.divide(1.23984193, wl_um)
+    if lin_wavelength:
+        wl_um = np.linspace(max_um, min_um, fit_points, True)
+        fit_wavenumber = np.divide(1e4, wl_um)
+        fit_ev = np.divide(1.23984193, wl_um)
+    else:
+        fit_wavenumber = np.linspace(1e4 / max_um, 1e4 / min_um, fit_points, True)
+        wl_um = np.divide(1e4, fit_wavenumber)
+        fit_ev = np.divide(1.23984193, wl_um)
 
     ir_osc2_interp = np.interp(fit_wavenumber, waveNumber, osc_ir_2)
     ir_osc1_interp = np.interp(fit_wavenumber, waveNumber, osc_ir_1)
@@ -110,30 +117,36 @@ def generate_epsilon(fit_points=1000, min_um=1.7, max_um=33, gen_points=10000, m
 
     eps_inf = 1.
 
-    epsilon = eps_inf + ir_osc1_interp + uv_osc1_interp + 1j*ir_osc2_interp + 1j*uv_osc2_interp
+    epsilon = eps_inf + ir_osc1_interp + uv_osc1_interp + 1j * ir_osc2_interp + 1j * uv_osc2_interp
     return wl_um, epsilon
+
 
 if __name__ == "__main__":
     fit_points = 200
 
-    # #
-    # # IR
-    # #
-    # min_um = 1.7
-    # max_um = 33.
-
     #
-    # UV
+    # IR
     #
-    min_ev = 0.73
-    max_ev = 9.53
-    min_um = np.divide(1.23984193, max_ev)
-    max_um = np.divide(1.23984193, min_ev)
+    min_um = 1.7
+    max_um = 33.
+    wl_um, epsilon = generate_epsilon(fit_points=fit_points, lin_wavelength=True, min_um=min_um, max_um=max_um)
 
-    wl_um, epsilon = generate_epsilon(fit_points=fit_points, min_um=min_um, max_um=max_um)
+    # #
+    # # UV
+    # #
+    # min_ev = 0.73
+    # max_ev = 9.53
+    # min_um = np.divide(1.23984193, max_ev)
+    # max_um = np.divide(1.23984193, min_ev)
+    #
+    # wl_um, epsilon = generate_epsilon(fit_points=fit_points, lin_wavelength=False, min_um=min_um, max_um=max_um)
 
     n = (epsilon ** .5).real
     k = (epsilon ** .5).imag
+
+    for i in range(len(k)):
+        if k[i] < 1e-10:
+            k[i] = 0.
 
     # ============================   DATA OUTPUT   =================================
     file = open('out.txt', 'w')
